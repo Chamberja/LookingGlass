@@ -1,35 +1,56 @@
 <!doctype html>
 <html>
   <head>
-    <title>Socket.IO chat</title>
-    <style>
-      * { margin: 0; padding: 0; box-sizing: border-box; }
-      body { font: 13px Helvetica, Arial; }
-      form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; }
-      form input { border: 0; padding: 10px; width: 90%; margin-right: .5%; }
-      form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
-      #messages { list-style-type: none; margin: 0; padding: 0; }
-      #messages li { padding: 5px 10px; }
-      #messages li:nth-child(odd) { background: #eee; }
-    </style>
+    <title>Looking Glass</title>
+    <link rel="stylesheet" type="text/css" href="styles.css">
   </head>
-  <body>
-    <ul id="messages"></ul>
-    <form action="">
+  <body class="chat-module">
+    <div class="messages-container">
+      <ul id="messages"></ul>
+    </div>
+    <ul id="userlist"></ul>
+    <form class="chat-form" action="">
       <input id="m" autocomplete="off" /><button>Send</button>
+    <a href="http://10.252.1.37:8888/Phaser/vrDemo/working.html" class="launch-vr" type="button">Launch VR</a>
     </form>
     <script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
     <script src="http://code.jquery.com/jquery-1.11.1.js"></script>
     <script>
-      var socket = io();
-      $('form').submit(function(){
-        socket.emit('chat message', $('#m').val());
+
+      var socket = io.connect('http://10.252.1.114');
+      var userList = [];
+      var clientUsername;
+
+      socket.on('connect', function() {
+        clientUsername = prompt('Enter Your Username');
+        socket.emit('adduser', clientUsername);
+      });
+
+      socket.on('updateusers', function (usernames) {
+        userList = usernames;
+        userList.sort();
+        $('#userlist').empty();
+        for(var i=0; i<userList.length; i++) {
+          $('#userlist').append('<li><p class="user-name">' + userList[i] + '</p></li><br>');
+        }
+      });
+
+      var chat = io();
+      $('.chat-form').submit(function(){
+        chat.emit('chat message', clientUsername, $('#m').val());
         $('#m').val('');
         return false;
       });
-      socket.on('chat message', function(msg){
-        $('#messages').append($('<li>').text(msg));
+
+      chat.on('chat message', function(clientUsername, msg){
+        $('#messages').append($('<li>').text(clientUsername + ': ' + msg));
+
+        $(".messages-container").each( function(){
+           var scrollHeight = Math.max(this.scrollHeight, this.clientHeight);
+           this.scrollTop = scrollHeight - this.clientHeight;
+        });
       });
+
     </script>
   </body>
 </html>

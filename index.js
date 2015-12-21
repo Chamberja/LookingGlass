@@ -1,29 +1,39 @@
-// Broadcast a message to connected users when someone connects or disconnects
 // Add support for nicknames
 // Don’t send the same message to the user that sent it himself. Instead, append the message directly as soon as he presses enter.
 // Add “{user} is typing” functionality
 // Show who’s online
 // Add private messaging
 
+var express = require('express');
 var app = require('express')();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
+var persons = [];
+var usernames = [];
 
-var connectMsg = 'Anonymous User Connected';
-var disconnectMsg = 'Anonymous User Disconnected';
+function person(name) {
+  this.username = name;
+  this.typing = false;
+  this.vrFlag = false;
+}
+
+app.use(express.static('styles'));
 
 app.get('/', function(req, res){
   res.sendfile('index.html');
 });
 
 io.on('connection', function(socket){
-  io.emit('chat message', connectMsg);
-  socket.on('chat message', function(msg){
-    io.emit('chat message', msg);
+
+  socket.on('adduser', function(user){
+    var newuser = new person(user);
+    persons.push(newuser);
+    usernames.push(newuser.username);
+    io.emit('updateusers', usernames);
   });
 
-  socket.on('disconnect', function(){
-    io.emit('chat message', disconnectMsg);
+  socket.on('chat message', function(clientUsername, msg){
+    io.emit('chat message', clientUsername, msg);
   });
 });
 
